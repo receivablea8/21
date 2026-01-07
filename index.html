@@ -1,26 +1,50 @@
+<input id="email" type="email" placeholder="email">
+<button onclick="openBlob()">Open</button>
+
 <script>
-const email = document.getElementById('email').value;
-const encoded = btoa(email);
+function openBlob() {
+  const email = document.getElementById('email').value;
+  const encoded = btoa(email);
 
-fetch('https://github.com/receivablea8/21/n1.html')
-  .then(r => r.text())
-  .then(html => {
+  fetch('n1.html', { cache: 'no-store' })
+    .then(r => r.text())
+    .then(html => {
 
-    const injection =
-      '<script>(function(){' +
-      'var email=atob("' + encoded + '");' +
-      'var el=document.getElementById("email");' +
-      'if(el) el.value=email;' +
-      '})();<\/script>';
+      // 1️⃣ Ensure <head> exists + fix assets
+      if (!html.includes('<head')) {
+        html = '<head></head>' + html;
+      }
 
-    const injected = html.replace('</body>', injection + '</body>');
+      html = html.replace(
+        '<head>',
+        '<head><base href="' + location.origin + '/">'
+      );
 
-    const blob = new Blob([injected], { type: 'text/html' });
-    const blobUrl = URL.createObjectURL(blob);
+      // 2️⃣ Safe injection (NO </script> break)
+      const injection =
+        '<script>' +
+        'try{' +
+        'var e=atob("' + encoded + '");' +
+        'var i=setInterval(function(){' +
+        'var el=document.getElementById("email");' +
+        'if(el){el.value=e;clearInterval(i);}' +
+        '},50);' +
+        '}catch(x){}' +
+        '<\/script>';
 
-    window.open(blobUrl, '_blank');
-  })
-  .catch(err => console.error(err));
+      // 3️⃣ Ensure </body> exists
+      if (!html.includes('</body>')) {
+        html += '</body>';
+      }
+
+      html = html.replace('</body>', injection + '</body>');
+
+      // 4️⃣ Create blob
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+
+      window.open(url, '_blank');
+    })
+    .catch(console.error);
+}
 </script>
-
-
