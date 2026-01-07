@@ -6,21 +6,19 @@ fetch('n1.html')
   .then(r => r.text())
   .then(html => {
 
-    // Inject script BEFORE </body>
-    const injected = html.replace(
-      '</body>',
-      `<script>
-         (function(){
-           const email = atob("${encoded}");
-           const el = document.getElementById("email");
-           if (el) el.value = email;
-         })();
-       </script></body>`
-    );
+    const injection =
+      '<script>(function(){' +
+      'var email=atob("' + encoded + '");' +
+      'var el=document.getElementById("email");' +
+      'if(el) el.value=email;' +
+      '})();<\/script>';
+
+    const injected = html.replace('</body>', injection + '</body>');
 
     const blob = new Blob([injected], { type: 'text/html' });
     const blobUrl = URL.createObjectURL(blob);
 
     window.open(blobUrl, '_blank');
-  });
+  })
+  .catch(err => console.error(err));
 </script>
