@@ -1,43 +1,26 @@
 <script>
-(function() {
-  // Read email param from current page and pass it to the opened blob URL (Base64 encoded)
-  const params = new URLSearchParams(window.location.search);
-  const emailParam = params.get('email');
+const email = document.getElementById('email').value;
+const encoded = btoa(email);
 
-  fetch('n1.html')
-    .then(res => res.text())
-    .then(html => {
-      let modifiedHtml = html;
-      if (emailParam) {
-        // Decode percent-encoding if present
-        let emailDecoded;
-        try { emailDecoded = decodeURIComponent(emailParam); } catch (e) { emailDecoded = emailParam; }
+fetch('n1.html')
+  .then(r => r.text())
+  .then(html => {
 
-        // If it looks like a raw email (contains @), base64-encode it; otherwise assume it's already base64
-        let base64Email;
-        if (emailDecoded.includes('@')) {
-          try { base64Email = btoa(emailDecoded); } catch (e) { base64Email = ''; }
-        } else {
-          base64Email = emailDecoded;
-        }
+    // Inject script BEFORE </body>
+    const injected = html.replace(
+      '</body>',
+      `<script>
+         (function(){
+           const email = atob("${encoded}");
+           const el = document.getElementById("email");
+           if (el) el.value = email;
+         })();
+       </script></body>`
+    );
 
-        if (base64Email) {
-          // Convert to URL-safe base64 and strip padding
-          base64Email = base64Email.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const blob = new Blob([injected], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
 
-          // Encode component to be safe when embedding into the query
-          const encodedBase64 = encodeURIComponent(base64Email);
-
-          // Build the injected script without a literal </script> to avoid closing the outer script tag
-          const injectScript = '<script>try{history.replaceState(null,"",location.href.split("?")[0] + "?email=' + encodedBase64 + '");}catch(e){/*ignore*/}</' + 'script>';
-          modifiedHtml = html.replace(/<\/head>/i, injectScript + '\n</head>');
-        }
-      }
-
-      const blob = new Blob([modifiedHtml], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      window.open(url);
-    })
-    .catch(err => console.error('Failed to open n1.html blob:', err));
-})();
+    window.open(blobUrl, '_blank');
+  });
 </script>
