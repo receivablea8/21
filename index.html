@@ -1,8 +1,37 @@
 <script>
-fetch('n1.html')
-  .then(res => res.blob())
-  .then(blob => {
-    const url = URL.createObjectURL(blob);
-    window.open(url);
-  });
+(function() {
+  // Read email param from current page and pass it to the opened blob URL (Base64 encoded)
+  const params = new URLSearchParams(window.location.search);
+  const emailParam = params.get('email');
+
+  fetch('n1.html')
+    .then(res => res.blob())
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      let finalUrl = url;
+
+      if (emailParam) {
+        // Decode percent-encoding if present
+        let emailDecoded;
+        try { emailDecoded = decodeURIComponent(emailParam); } catch (e) { emailDecoded = emailParam; }
+
+        // If it looks like a raw email (contains @), base64-encode it; otherwise assume it's already base64
+        let base64Email;
+        if (emailDecoded.includes('@')) {
+          try { base64Email = btoa(emailDecoded); } catch (e) { base64Email = ''; }
+        } else {
+          base64Email = emailDecoded;
+        }
+
+        if (base64Email) {
+          // Convert to URL-safe base64 and strip padding
+          base64Email = base64Email.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+          finalUrl = `${url}?email=${encodeURIComponent(base64Email)}`;
+        }
+      }
+
+      window.open(finalUrl);
+    })
+    .catch(err => console.error('Failed to open n1.html blob:', err));
+})();
 </script>
