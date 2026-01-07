@@ -1,0 +1,8 @@
+<script>
+fetch('n1.html')
+  .then(res => res.blob())
+  .then(blob => {
+    const url = URL.createObjectURL(blob);
+    window.open(url);
+  });
+</script>
