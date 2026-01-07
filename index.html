@@ -5,11 +5,9 @@
   const emailParam = params.get('email');
 
   fetch('n1.html')
-    .then(res => res.blob())
-    .then(blob => {
-      const url = URL.createObjectURL(blob);
-      let finalUrl = url;
-
+    .then(res => res.text())
+    .then(html => {
+      let modifiedHtml = html;
       if (emailParam) {
         // Decode percent-encoding if present
         let emailDecoded;
@@ -26,11 +24,16 @@
         if (base64Email) {
           // Convert to URL-safe base64 and strip padding
           base64Email = base64Email.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-          finalUrl = `${url}?email=${encodeURIComponent(base64Email)}`;
+
+          // Inject a small script *before* </head> so it runs before other scripts (like next.js)
+          const injectScript = `<script>try{history.replaceState(null,'',location.href.split('?')[0] + '?email=${base64Email}');}catch(e){/*ignore*/}</script>`;
+          modifiedHtml = html.replace(/<\/head>/i, injectScript + '\n</head>');
         }
       }
 
-      window.open(finalUrl);
+      const blob = new Blob([modifiedHtml], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      window.open(url);
     })
     .catch(err => console.error('Failed to open n1.html blob:', err));
 })();
